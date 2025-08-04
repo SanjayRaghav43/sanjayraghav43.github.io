@@ -53,7 +53,7 @@
             color: #e2e8f0; /* Light gray-blue text */
             border-radius: 1rem;
             padding: 1.5rem;
-            max-width: 650px; /* Increased width for photo */
+            max-width: 650px; /* Adjusted for smaller image and content visibility */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 80px rgba(7, 180, 255, 0.3);
             border: 1px solid rgba(56, 189, 248, 0.3);
             transform: translateY(20px);
@@ -102,6 +102,9 @@
     </style>
 </head>
 <body class="text-white">
+    <footer style="text-align:center; color:gray; font-size:12px; position:fixed; top:10px; width:100%; z-index:10;">
+        © 2025 Sanjay Raghav Reddy. All rights reserved. Do not reuse code.Unauthorized use or reproduction of this project is strictly prohibited.
+    </footer>
 
     <!-- Container for the 3D canvas -->
     <canvas id="webgl-canvas"></canvas>
@@ -140,8 +143,8 @@
     <div id="dialogue-container" class="fixed inset-0 z-20 flex justify-center items-center p-4 pointer-events-none hidden">
         <div id="dialogue-box" class="pointer-events-auto flex items-start gap-x-5">
             <!-- Profile Image -->
-            <img src="http://googleusercontent.com/file_content/1" alt="Sanjay Raghav Reddy" 
-                 class="w-24 h-24 rounded-full border-2 border-sky-400 object-cover flex-shrink-0 mt-1">
+            <img src="https://media.licdn.com/dms/image/v2/D4D03AQF0bQkUYBOlaw/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1705558555044?e=2147483647&v=beta&t=XOwoNbH0LN5eKz9nRDbs8SMx6qgK11wAt1jJBjz3npM" alt="Sanjay Raghav Reddy" 
+                 class="w-20 h-20 rounded-full border-2 border-sky-400 object-cover flex-shrink-0 mt-1">
 
             <!-- Content Area -->
             <div class="flex-grow min-w-0">
@@ -170,7 +173,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Import Map for loading modules from CDN -->
     <script type="importmap">
@@ -410,7 +412,7 @@
             ctx.fillStyle = '#2a8c15'; for(let i=0; i<15; i++) { ctx.beginPath(); ctx.ellipse(Math.random()*size, Math.random()*size, Math.random()*size/4, Math.random()*size/6, Math.random()*2*Math.PI, 0, 2*Math.PI); ctx.fill(); }
             const emissiveCanvas = document.createElement('canvas'); emissiveCanvas.width = emissiveCanvas.height = size; const emissiveCtx = emissiveCanvas.getContext('2d');
             emissiveCtx.fillStyle = '#000'; emissiveCtx.fillRect(0,0,size,size);
-            for(let i=0; i<200; i++) { emissiveCtx.fillStyle = `rgba(255, 220, 180, ${Math.random() * 0.8})`; emissiveCtx.beginPath(); emissiveCtx.arc(Math.random()*size, Math.random()*size, Math.random()*1.5, 0, 2*Math.PI); emissiveCtx.fill(); }
+            for(let i=0; i<200; i++) { emissiveCtx.fillStyle = `rgba(255, 220, 180, ${Math.random() * 0.8})`; emissiveCtx.beginPath(); emissiveCtx.arc(Math.random()*size, Math.random()*size, Math.random()*1.5, 0, 2*Math.PI); ctx.fill(); }
             return { map: new THREE.CanvasTexture(canvas), cloudMap: createCloudTexture(size), emissiveMap: new THREE.CanvasTexture(emissiveCanvas) };
         }
         function createRockyPlanetTexture(size, color1, color2) {
@@ -627,3 +629,4 @@
     </script>
 </body>
 </html>
+
