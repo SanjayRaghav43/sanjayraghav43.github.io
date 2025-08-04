@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanjay Raghav Reddy - 3D Solar System Portfolio</title>
+
+    <!-- Tailwind CSS for styling the UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tone.js for audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow: hidden; /* Prevent scrollbars on the main body */
+        }
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            outline: none;
+        }
+        .ui-container {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* UI is above the canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .ui-container > div { /* Allow clicks on direct children of the UI container */
+            pointer-events: auto;
+        }
+
+        /* Styling for the dialogue box */
+        #dialogue-box, #social-modal {
+            background-color: rgba(10, 25, 47, 0.85); /* A deep space blue */
+            backdrop-filter: blur(10px);
+            color: #e2e8f0; /* Light gray-blue text */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 650px; /* Increased width for photo */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 80px rgba(7, 180, 255, 0.3);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        /* Custom scrollbar for dialogue content */
+        #dialogue-content {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 1rem; /* space for scrollbar */
+            font-size: 1.1rem; 
+            line-height: 1.6;
+        }
+        #dialogue-content h3, #social-modal h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #60a5fa; /* Light blue for headings */
+            margin-bottom: 1rem;
+        }
+        #dialogue-content ul {
+            list-style-position: outside;
+            padding-left: 1.25rem;
+        }
+        #dialogue-content li {
+            margin-bottom: 0.75rem;
+        }
+        #dialogue-content b {
+            color: #93c5fd; /* Brighter blue for bold text */
+        }
+
+        #dialogue-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        #dialogue-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        #dialogue-content::-webkit-scrollbar-thumb {
+            background: #0ea5e9; /* A nice blue */
+            border-radius: 10px;
+        }
+        #dialogue-content::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Container for the 3D canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Loading Screen Overlay -->
+    <div id="loading-screen" class="fixed inset-0 bg-black flex flex-col justify-center items-center z-50 transition-opacity duration-1000">
+        <div class="w-16 h-16 border-4 border-t-blue-500 border-gray-800 rounded-full animate-spin"></div>
+        <p class="mt-4 text-lg text-gray-400">Synthesizing Audio Waves...</p>
+    </div>
+
+    <!-- Main UI Container -->
+    <div id="main-ui" class="ui-container p-4 md:p-8">
+        <!-- Top Left: Title -->
+        <div class="bg-black bg-opacity-70 backdrop-blur-sm rounded-lg p-4 z-20 max-w-md"> 
+            <h1 class="text-2xl md:text-3xl font-bold text-white">Sanjay Raghav Reddy</h1>
+            <p class="text-blue-300">3D Interactive Resume</p>
+        </div>
+
+        <!-- Bottom Center: Navigation -->
+        <div id="navigation-bar" class="flex justify-center items-center w-full">
+            <div class="bg-black bg-opacity-50 backdrop-blur-sm rounded-xl p-3 md:p-4 flex flex-wrap justify-center items-center gap-2 md:space-x-4">
+                <button data-target="about" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">About</button>
+                <button data-target="skills" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Skills</button>
+                <button data-target="projects" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Projects</button>
+                <button data-target="experience" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Experience</button>
+                <button data-target="education" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Education</button>
+                <button data-target="certifications" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Certifications</button>
+                <button data-target="achievements" class="nav-btn text-gray-300 hover:text-white hover:bg-blue-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Achievements</button>
+                <button data-target="social" class="nav-btn text-gray-300 hover:text-white hover:bg-green-500/30 px-3 py-1 rounded-md transition-all text-sm md:text-base">Social</button>
+                <button id="reset-view-btn" class="text-gray-300 hover:text-white bg-gray-700/50 hover:bg-gray-600/50 px-3 py-1 rounded-md transition-all text-sm md:text-base">Reset View</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dialogue Container (with Profile Photo) -->
+    <div id="dialogue-container" class="fixed inset-0 z-20 flex justify-center items-center p-4 pointer-events-none hidden">
+        <div id="dialogue-box" class="pointer-events-auto flex items-start gap-x-5">
+            <!-- Profile Image -->
+            <img src="http://googleusercontent.com/file_content/1" alt="Sanjay Raghav Reddy" 
+                 class="w-24 h-24 rounded-full border-2 border-sky-400 object-cover flex-shrink-0 mt-1">
+
+            <!-- Content Area -->
+            <div class="flex-grow min-w-0">
+                <div id="dialogue-content" class="mb-4">
+                    <p id="dialogue-text" class="leading-relaxed"></p>
+                </div>
+                <div id="dialogue-navigation" class="flex justify-end items-center">
+                    <button id="dialogue-close" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Social Media Modal -->
+    <div id="social-modal-container" class="fixed inset-0 z-30 flex justify-center items-center p-4 pointer-events-none hidden">
+        <div id="social-modal" class="pointer-events-auto w-full max-w-sm">
+            <h3 class="text-center">Social Profiles</h3>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <button data-social="blogs" class="social-link-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">Blogs</button>
+                <button data-social="youtube" class="social-link-btn bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">YouTube</button>
+                <button data-social="linkedin" class="social-link-btn bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">LinkedIn</button>
+                <button data-social="quora" class="social-link-btn bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105">Quora</button>
+            </div>
+             <div class="flex justify-end items-center mt-6">
+                <button id="social-close" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Import Map for loading modules from CDN -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+            "gsap": "https://unpkg.com/gsap@3.12.5/index.js"
+        }
+    }
+    </script>
+
+    <!-- Main JavaScript Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { gsap } from 'gsap';
+
+        // --- AUDIO SETUP (Tone.js) ---
+        let soundsReady = false;
+        let ambientSoundStarted = false;
+        const sounds = {};
+
+        function initAudio() {
+            // Planet and UI sounds
+            sounds.about = new Tone.Synth({ oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.2, decay: 0.5, sustain: 0.2, release: 1 } }).toDestination();
+            sounds.skills = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0 } }).toDestination();
+            sounds.projects = new Tone.PluckSynth().toDestination();
+            sounds.experience = new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 5 }).toDestination();
+            sounds.education = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10 }).toDestination();
+            sounds.certifications = new Tone.AMSynth().toDestination();
+            sounds.achievements = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.1, decay: 0.3, sustain: 0.2, release: 1 } }).toDestination();
+            
+            // Earthquake sound for Social button
+            sounds.social = new Tone.MembraneSynth({
+                pitchDecay: 0.01, octaves: 2, oscillator: { type: 'sine' },
+                envelope: { attack: 0.01, decay: 0.8, sustain: 0.1, release: 2.0 }
+            }).toDestination();
+            
+            // Social media link sounds
+            sounds.blogs = new Tone.PluckSynth({attackNoise: 1, dampening: 4000, resonance: 0.7}).toDestination();
+            sounds.youtube = new Tone.NoiseSynth({noise: {type: 'white'}, envelope: {attack: 0.005, decay: 0.1, sustain: 0}}).toDestination();
+            sounds.linkedin = new Tone.Synth({ oscillator: { type: 'pulse', width: 0.6 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 } }).toDestination();
+            sounds.quora = new Tone.FMSynth({harmonicity: 1, modulationIndex: 10, modulationEnvelope: {attack: 0.2, decay: 0.01}}).toDestination();
+            
+            // Reset button sound
+            sounds.reset = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 } }).toDestination();
+            
+            // Background ambient ocean sound
+            sounds.ambient = new Tone.Noise("brown").toDestination();
+            sounds.ambient.volume.value = -35; // Very quiet
+            const autoFilter = new Tone.AutoFilter({
+                frequency: "4m",
+                baseFrequency: 200,
+                octaves: 3
+            }).toDestination().start();
+            sounds.ambient.connect(autoFilter);
+
+            soundsReady = true;
+        }
+
+        function playSound(name, note = "C4") {
+            if (!soundsReady || !sounds[name]) return;
+            
+            // Start audio context and ambient sound on first interaction
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            if (!ambientSoundStarted) {
+                sounds.ambient.start();
+                ambientSoundStarted = true;
+            }
+
+            if (sounds[name] instanceof Tone.NoiseSynth || sounds[name] instanceof Tone.MembraneSynth) {
+                sounds[name].triggerAttack();
+            } else {
+                sounds[name].triggerAttackRelease(note, "0.5s");
+            }
+        }
+
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 4000);
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('webgl-canvas'),
+            antialias: true 
+        });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        scene.fog = new THREE.FogExp2(0x000000, 0.0007);
+
+        // --- CAMERA AND CONTROLS ---
+        const initialCameraPosition = new THREE.Vector3(0, 20, 45);
+        camera.position.copy(initialCameraPosition);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 300; 
+        controls.enablePan = false;
+        controls.maxPolarAngle = Math.PI / 1.8;
+        controls.target.set(0, 0, 0);
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+        
+        const sunLight = new THREE.PointLight(0xffeeb1, 5, 600);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+
+        // --- DYNAMIC BACKGROUND (PARALLAX STARFIELD) ---
+        let starfields = [];
+        createDynamicStarfield();
+
+        function createDynamicStarfield() {
+            const starCounts = [5000, 7000, 10000];
+            const starSizes = [1.5, 1, 0.5];
+            const distances = [1000, 700, 500];
+            
+            for(let j = 0; j < 3; j++) {
+                const starVertices = [];
+                for (let i = 0; i < starCounts[j]; i++) {
+                    const x = THREE.MathUtils.randFloatSpread(2000);
+                    const y = THREE.MathUtils.randFloatSpread(2000);
+                    const z = THREE.MathUtils.randFloatSpread(2000);
+                    const d = Math.sqrt(x*x + y*y + z*z);
+                    starVertices.push(x/d * distances[j], y/d * distances[j], z/d * distances[j]);
+                }
+                const starGeometry = new THREE.BufferGeometry();
+                starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+                const starMaterial = new THREE.PointsMaterial({ 
+                    color: 0xbbccff, 
+                    size: starSizes[j],
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending
+                });
+                const stars = new THREE.Points(starGeometry, starMaterial);
+                stars.userData.rotationSpeed = 0.00002 * (j + 1);
+                starfields.push(stars);
+                scene.add(stars);
+            }
+        }
+
+        // --- SOLAR SYSTEM OBJECTS ---
+        const solarSystem = new THREE.Group();
+        scene.add(solarSystem);
+        const planets = {};
+
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffddaa });
+        const sun = new THREE.Mesh(new THREE.SphereGeometry(5, 64, 64), sunMaterial);
+        sun.name = 'sun';
+        const sunGlowMaterial = new THREE.SpriteMaterial({ map: createGlowTexture(0xffa500), transparent: true, blending: THREE.AdditiveBlending, opacity: 0.9 });
+        const sunGlow = new THREE.Sprite(sunGlowMaterial);
+        sunGlow.scale.set(30, 30, 1);
+        sun.add(sunGlow);
+        solarSystem.add(sun);
+        
+        planets.about = createPlanet('Earth', 1.8, 15, 0.015);
+        planets.skills = createPlanet('Mars', 1.4, 22, 0.012);
+        planets.projects = createPlanet('Jupiter', 3.5, 32, 0.008);
+        planets.experience = createPlanet('Saturn', 3, 45, 0.005, true);
+        planets.education = createPlanet('Neptune', 2.5, 58, 0.003);
+        planets.certifications = createPlanet('Uranus', 2.2, 70, 0.002);
+        planets.achievements = createPlanet('Pluto', 0.8, 82, 0.001);
+        planets.social = createComet('SocialComet', 95, 0.0008); 
+        Object.values(planets).forEach(p => solarSystem.add(p));
+
+        function createPlanet(name, size, distance, speed, hasRings = false) {
+            const planetGroup = new THREE.Group();
+            const textures = getPlanetTextures(name, size);
+            const material = new THREE.MeshStandardMaterial({ map: textures.map, normalMap: textures.normalMap, metalness: 0.1, roughness: 0.7 });
+            if (textures.emissiveMap) { material.emissiveMap = textures.emissiveMap; material.emissive = new THREE.Color(0xffffff); material.emissiveIntensity = 1.0; }
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 64, 64), material);
+            mesh.name = name;
+            planetGroup.add(mesh);
+            if (name === 'Earth') {
+                const cloudMaterial = new THREE.MeshStandardMaterial({ alphaMap: textures.cloudMap, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+                const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(size * 1.03, 64, 64), cloudMaterial);
+                mesh.add(cloudMesh);
+                mesh.userData.cloudMesh = cloudMesh;
+            }
+            if (hasRings) {
+                const ringGeometry = new THREE.RingGeometry(size * 1.4, size * 2.2, 64);
+                const ringMaterial = new THREE.MeshBasicMaterial({ map: textures.ringMap, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+                const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+                ringMesh.rotation.x = Math.PI / 1.8;
+                mesh.add(ringMesh);
+            }
+            const orbitGeometry = new THREE.RingGeometry(distance, distance + 0.05, 128);
+            const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+            const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbit.rotation.x = Math.PI / 2;
+            solarSystem.add(orbit);
+            planetGroup.userData = { distance, speed, angle: Math.random() * Math.PI * 2 };
+            return planetGroup;
+        }
+        
+        function createComet(name, distance, speed) {
+            const cometGroup = new THREE.Group();
+            const headGeometry = new THREE.IcosahedronGeometry(1, 3);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0x87ceeb, emissive: 0x87ceeb, emissiveIntensity: 2, metalness: 0.5, roughness: 0.2 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.name = name;
+            cometGroup.add(head);
+            const tailGeometry = new THREE.ConeGeometry(0.5, 10, 16);
+            const tailMaterial = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+            const tail = new THREE.Mesh(tailGeometry, tailMaterial);
+            tail.position.z = -5;
+            tail.rotation.x = Math.PI/2;
+            head.add(tail);
+            cometGroup.userData = { distance, speed, angle: Math.random() * Math.PI * 2 };
+            return cometGroup;
+        }
+
+        // --- PROCEDURAL TEXTURE GENERATION ---
+        function getPlanetTextures(name, size) {
+            const textureSize = 512;
+            switch(name) {
+                case 'Earth': return createEarthTextures(textureSize);
+                case 'Mars': return createRockyPlanetTexture(textureSize, '#c1440e', '#892e0a');
+                case 'Jupiter': return createGasGiantTexture(textureSize);
+                case 'Saturn': return { ...createRockyPlanetTexture(textureSize, '#d3cba3', '#a19882'), ringMap: createSaturnRingTexture(256) };
+                case 'Neptune': return createRockyPlanetTexture(textureSize, '#5b92e5', '#3b6aa5');
+                case 'Uranus': return createRockyPlanetTexture(textureSize, '#afdbf5', '#89cff0');
+                case 'Pluto': return createRockyPlanetTexture(textureSize, '#e6d8c8', '#a49584');
+                default: return { map: new THREE.CanvasTexture(document.createElement('canvas')) };
+            }
+        }
+        function createEarthTextures(size) {
+            const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#15428c'; ctx.fillRect(0,0,size,size);
+            ctx.fillStyle = '#2a8c15'; for(let i=0; i<15; i++) { ctx.beginPath(); ctx.ellipse(Math.random()*size, Math.random()*size, Math.random()*size/4, Math.random()*size/6, Math.random()*2*Math.PI, 0, 2*Math.PI); ctx.fill(); }
+            const emissiveCanvas = document.createElement('canvas'); emissiveCanvas.width = emissiveCanvas.height = size; const emissiveCtx = emissiveCanvas.getContext('2d');
+            emissiveCtx.fillStyle = '#000'; emissiveCtx.fillRect(0,0,size,size);
+            for(let i=0; i<200; i++) { emissiveCtx.fillStyle = `rgba(255, 220, 180, ${Math.random() * 0.8})`; emissiveCtx.beginPath(); emissiveCtx.arc(Math.random()*size, Math.random()*size, Math.random()*1.5, 0, 2*Math.PI); emissiveCtx.fill(); }
+            return { map: new THREE.CanvasTexture(canvas), cloudMap: createCloudTexture(size), emissiveMap: new THREE.CanvasTexture(emissiveCanvas) };
+        }
+        function createRockyPlanetTexture(size, color1, color2) {
+            const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color1; ctx.fillRect(0,0,size,size);
+            for(let i=0; i<size*2; i++) { ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.1})`; ctx.beginPath(); ctx.arc(Math.random()*size, Math.random()*size, Math.random()*size/10, 0, 2*Math.PI); ctx.fill(); }
+            for(let i=0; i<size; i++) { ctx.fillStyle = `${color2}80`; ctx.fillRect(Math.random()*size, Math.random()*size, Math.random()*2, Math.random()*2); }
+            return { map: new THREE.CanvasTexture(canvas) };
+        }
+        function createGasGiantTexture(size) {
+            const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const ctx = canvas.getContext('2d');
+            const colors = ['#bcaea0', '#d3cba3', '#a19882', '#8c7e6a'];
+            for(let i=0; i<size; i++) { ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)]; ctx.fillRect(0, i, size, 1);
+                for(let j=0; j<10; j++) { ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.05})`; ctx.beginPath(); ctx.arc(Math.random()*size, i, Math.random()*size/20, 0, 2*Math.PI); ctx.fill(); }
+            } return { map: new THREE.CanvasTexture(canvas) };
+        }
+        function createSaturnRingTexture(size) {
+            const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size; const ctx = canvas.getContext('2d');
+            const grd = ctx.createRadialGradient(size/2, size/2, size/4, size/2, size/2, size/2);
+            grd.addColorStop(0, 'rgba(150, 140, 120, 0.8)'); grd.addColorStop(0.6, 'rgba(150, 140, 120, 0.7)'); grd.addColorStop(0.62, 'rgba(0,0,0,0)');
+            grd.addColorStop(0.64, 'rgba(150, 140, 120, 0.7)'); grd.addColorStop(1, 'rgba(150, 140, 120, 0.3)');
+            ctx.fillStyle = grd; ctx.fillRect(0,0,size,size); return new THREE.CanvasTexture(canvas);
+        }
+        function createCloudTexture(size) {
+            const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const context = canvas.getContext('2d');
+            context.fillStyle = '#000'; context.fillRect(0, 0, size, size);
+            for (let i = 0; i < size*2; i++) { const x = Math.random() * size; const y = Math.random() * size; const r = Math.random() * size/8 + size/16;
+                const grad = context.createRadialGradient(x, y, 0, x, y, r);
+                grad.addColorStop(0, `rgba(255,255,255,${Math.random()*0.6})`); grad.addColorStop(1, 'rgba(255,255,255,0)');
+                context.fillStyle = grad; context.fillRect(x - r, y - r, 2 * r, 2 * r);
+            } return new THREE.CanvasTexture(canvas);
+        }
+        function createGlowTexture(color) {
+            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.2, new THREE.Color(color).getStyle());
+            gradient.addColorStop(0.5, new THREE.Color(color).getStyle()); gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient; context.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- LOADING MANAGER ---
+        const loadingManager = new THREE.LoadingManager();
+        const loadingScreen = document.getElementById('loading-screen');
+        loadingManager.onLoad = () => {
+            gsap.to(loadingScreen, { opacity: 0, duration: 1.5, onComplete: () => { loadingScreen.style.display = 'none'; initAudio(); } });
+        };
+        loadingManager.onLoad();
+
+        // --- UI & NAVIGATION LOGIC ---
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const resetButton = document.getElementById('reset-view-btn');
+        const socialLinkButtons = document.querySelectorAll('.social-link-btn');
+        const socialLinks = {
+            blogs: 'https://sanjayraghavreddy.blogspot.com/?m=1',
+            youtube: 'https://www.youtube.com/@sanjaytechviews1615',
+            linkedin: 'https://www.linkedin.com/in/i-sanjay-raghav-reddy-7145652aa/',
+            quora: 'https://www.quora.com/profile/Sanjay-Raghav-Reddy'
+        };
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetName = button.dataset.target;
+                playSound(targetName);
+                const targetObject = planets[targetName];
+                if (targetObject) {
+                    if (targetName === 'social') {
+                        showSocialModal();
+                    } else {
+                        navigateTo(targetObject.children[0], () => {
+                            showDialogue(targetName);
+                        });
+                    }
+                }
+            });
+        });
+        
+        socialLinkButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const socialName = button.dataset.social;
+                playSound(socialName);
+                window.open(socialLinks[socialName], '_blank');
+            });
+        });
+
+        resetButton.addEventListener('click', () => {
+            playSound('reset');
+            resetView();
+        });
+
+        function navigateTo(targetObject, onCompleteCallback) {
+            const worldPosition = new THREE.Vector3();
+            targetObject.getWorldPosition(worldPosition);
+            
+            const radius = targetObject.geometry.parameters.radius || 1;
+            const cameraOffset = new THREE.Vector3(0, radius * 1.5, radius * 4);
+            
+            gsap.to(camera.position, {
+                x: worldPosition.x + cameraOffset.x,
+                y: worldPosition.y + cameraOffset.y,
+                z: worldPosition.z + cameraOffset.z,
+                duration: 2,
+                ease: 'power3.inOut',
+                onComplete: onCompleteCallback // Call the callback function when animation finishes
+            });
+
+            gsap.to(controls.target, {
+                x: worldPosition.x,
+                y: worldPosition.y,
+                z: worldPosition.z,
+                duration: 2,
+                ease: 'power3.inOut'
+            });
+        }
+
+        function resetView() {
+            hideDialogue();
+            hideSocialModal();
+            gsap.to(camera.position, {
+                ...initialCameraPosition,
+                duration: 2,
+                ease: 'power3.inOut'
+            });
+            gsap.to(controls.target, {
+                x: 0, y: 0, z: 0,
+                duration: 2,
+                ease: 'power3.inOut'
+            });
+        }
+
+        // --- DIALOGUE & MODAL SYSTEM ---
+        const dialogueContainer = document.getElementById('dialogue-container');
+        const dialogueBox = document.getElementById('dialogue-box');
+        const dialogueText = document.getElementById('dialogue-text');
+        const dialogueCloseBtn = document.getElementById('dialogue-close');
+        const socialModalContainer = document.getElementById('social-modal-container');
+        const socialModal = document.getElementById('social-modal');
+        const socialCloseBtn = document.getElementById('social-close');
+        const dialogueContent = {
+            about: `<h3>Professional Summary</h3><p>Highly analytical and results-oriented System-Software-Engineer specializing in operating systems, computer architecture, and networking technologies with Red Hat Enterprise Linux expertise through RHCSA and RHCE certifications. Proven ability to optimize system performance, troubleshoot complex hardware and software issues, and enhance system reliability through meticulous diagnostics and process automation. Seeking to leverage expertise in system-level problem-solving and enterprise Linux administration to drive technical excellence and operational efficiency.</p>`,
+            skills: `<h3>Technical Skills</h3><ul><li><b>Programming Languages:</b> C, Python, Ruby, HTML5, CSS3</li><li><b>Operating Systems:</b> Linux System Administration, Process scheduling, memory management</li><li><b>RHEL:</b> RHCSA & RHCE Certified. Server deployment, configuration, user/package management, LVM, security.</li><li><b>Networking:</b> TCP/IP, OSI model, DNS/DHCP, switching, routing.</li><li><b>System Engineering:</b> OS optimization, diagnostics, automation, hardware troubleshooting.</li><li><b>Tools:</b> MATLAB, Power BI, VS Code, Git.</li></ul>`,
+            projects: `<h3>Technical Projects</h3><ul><li><b>Memory Allocation Simulator (C):</b> Compared First-Fit, Best-Fit, Worst-Fit strategies, achieving 15% fragmentation reduction with Best-Fit.</li><li><b>CPU & RAM Monitors (C, Windows API):</b> Built lightweight desktop apps for real-time performance tracking.</li><li><b>Thyroid Disorder Prediction (Python, ML):</b> Achieved 90%+ accuracy with SVM, Random Forest, and MLP models.</li></ul>`,
+            experience: `<h3>Freelance IT and Systems Support Engineer (2020-Present)</h3><ul><li>Diagnosed and resolved over 150 complex system issues, increasing system uptime by 20%.</li><li>Executed critical firmware/BIOS updates for 50+ enterprise systems.</li><li>Implemented OS-level optimizations, achieving a 15% average performance increase.</li></ul>`,
+            education: `<h3>Education</h3><ul><li><b>Vellore Institute of Technology (VIT), Chennai</b><br>Integrated M.Tech in Software Engineering (2020 – 2025) - CGPA: 7.67/10</li><li><b>Sri Chaitanya Junior College, Hyderabad</b><br>Intermediate (MPC) — Score: 825/1000</li><li><b>Dr. K.K.R’s Gowtham Concept High School</b><br>Secondary School (Class X) — CGPA: 8.3/10</li></ul>`,
+            certifications: `<h3>Certifications</h3><ul><li><b>Red Hat Certified System Administrator (RHCSA)</b></li><li><b>Red Hat Certified Engineer (RHCE)</b></li><li><b>Microsoft Certified: Security, Compliance, and Identity Fundamentals</b></li><li><b>Google IT Support Professional Certification</b></li></ul>`,
+            achievements: `<h3>Achievements</h3><ul><li><b>Best Volunteer Award</b> - Sports and Health Life Club, VIT Chennai</li><li><b>Tech Content Creator</b> - Active in technical knowledge sharing via a Blog, YouTube Channel, and as a Quora Expert.</li></ul>`
+        };
+        let dialogueIsActive = false, socialModalIsActive = false;
+
+        function showDialogue(targetName) {
+            hideSocialModal();
+            dialogueText.innerHTML = dialogueContent[targetName] || "Select a category.";
+            if (dialogueIsActive) { gsap.fromTo(dialogueText, {opacity: 0}, {opacity: 1, duration: 0.4}); return; };
+            dialogueIsActive = true;
+            dialogueContainer.classList.remove('hidden');
+            gsap.to(dialogueBox, { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)'});
+            gsap.to('#main-ui', { opacity: 0.2, duration: 0.5 });
+        }
+        function hideDialogue() {
+            if (!dialogueIsActive) return; dialogueIsActive = false;
+            gsap.to(dialogueBox, { opacity: 0, y: 20, duration: 0.3, ease: 'power2.in', onComplete: () => dialogueContainer.classList.add('hidden') });
+            if (!socialModalIsActive) { gsap.to('#main-ui', { opacity: 1, duration: 0.5 }); }
+        }
+        function showSocialModal() {
+            hideDialogue(); if (socialModalIsActive) return; socialModalIsActive = true;
+            socialModalContainer.classList.remove('hidden');
+            gsap.to(socialModal, { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)'});
+            gsap.to('#main-ui', { opacity: 0.2, duration: 0.5 });
+        }
+        function hideSocialModal() {
+            if (!socialModalIsActive) return; socialModalIsActive = false;
+            gsap.to(socialModal, { opacity: 0, y: 20, duration: 0.3, ease: 'power2.in', onComplete: () => socialModalContainer.classList.add('hidden') });
+            if (!dialogueIsActive) { gsap.to('#main-ui', { opacity: 1, duration: 0.5 }); }
+        }
+        dialogueCloseBtn.addEventListener('click', resetView);
+        socialCloseBtn.addEventListener('click', resetView);
+
+        // --- MAIN ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
+
+            starfields.forEach(sf => { sf.rotation.y += sf.userData.rotationSpeed; });
+
+            Object.values(planets).forEach(celestialObject => {
+                const { distance, speed } = celestialObject.userData;
+                celestialObject.userData.angle += speed * delta * 5;
+                celestialObject.position.x = Math.cos(celestialObject.userData.angle) * distance;
+                celestialObject.position.z = Math.sin(celestialObject.userData.angle) * distance;
+                const mesh = celestialObject.children[0];
+                mesh.rotation.y += delta * 0.1;
+                if (mesh.userData.cloudMesh) { mesh.userData.cloudMesh.rotation.y += delta * 0.03; }
+                if (mesh.name === 'SocialComet') { mesh.lookAt(sun.position); }
+            });
+
+            const scale = 1 + Math.sin(elapsedTime * 1.5) * 0.15;
+            sunGlow.scale.set(30 * scale, 30 * scale, 1);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // --- EVENT LISTENERS ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation loop
+        animate();
+
+    </script>
+</body>
+</html>
